@@ -4,3 +4,5 @@ labels:
   - "Newsletter03"
 
 path: "/your/ebook/local/path"
+sender: "email@gmail.com"
+recipient: "email@gmail.com"

@@ -58,4 +58,4 @@ for id in selected_ids:
 
 
 if len(unsended_ebooks) > 0:
-  message_sended = send_message(service, unsended_ebooks[0], yml["sender"], yml["recipient"])
+  message_sended = send_message(service, unsended_ebooks, yml["sender"], yml["recipient"])

@@ -6,7 +6,7 @@ def format_ebook(content):
   
   soup = BeautifulSoup(content, "lxml")
   
-  for script in soup(["script", "style", "meta", "link", "button"]):
+  for script in soup(["script", "style", "meta", "link", "button", "a"]):
     script.decompose()
 
   return " ".join(soup.stripped_strings)
