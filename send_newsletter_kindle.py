@@ -1,11 +1,17 @@
 import yaml
 import os
 from ebooklib import epub
-from bs4 import BeautifulSoup
-from utils import sign_in, get_label_ids, get_message
+from utils import sign_in, get_label_ids, get_message, format_ebook, create_epub, send_message
+
+EBOOK_CSS_PATH = os.path.abspath("./utils/epub/style.css")
 
 with open("labels.yml", "r") as file:
   yml = yaml.safe_load(file)
+
+with open(EBOOK_CSS_PATH, "r") as file:
+  style = file.read()
+
+unsended_ebooks = []
 
 ebooks_path = yml["path"]
 service = sign_in()
@@ -14,58 +20,42 @@ labels = service.users().labels().list(userId="me").execute().get("labels", [])
 selected_ids = get_label_ids(labels, yml["labels"])
 
 for id in selected_ids:
-  messages = service.users().messages().list(userId="me", labelIds=[id]).execute().get("messages", [])
+  message_ids = service.users().messages().list(userId="me", labelIds=[id]).execute().get("messages", [])
 
-  for message in messages:
-    format_message = get_message(service, message_id=message["id"])
+  for message_id in message_ids:
+    message = get_message(service, message_id=message_id["id"])
+    book = {}
 
-    soup = BeautifulSoup(format_message["content"], "lxml")
-    
-    for script in soup(["script", "style", "meta", "link"]):
-      script.decompose()
+    message_date = message["date"].split(" ")
+    date_text = " ".join([message_date[1], message_date[2], message_date[3]])
 
-    formated_content = str(soup)
-    
-    directory = format_message["author"].replace(" ", "")
-    title = f"{format_message['subject']} - {format_message['author']}"
-    
-    book = epub.EpubBook()
-    book.set_title(title)
-    book.set_language("es")
-    book.add_author(format_message["author"])
-    content = epub.EpubHtml(title=format_message["subject"], file_name="content.xhtml", lang="es")
-    content.content = formated_content
+    book["title"] = f"{message["subject"]} - {message['author']} - {date_text}"
+    book["author"] = message["author"]
+    book["subject"] = message["subject"]
+    book["content"] = format_ebook(message["content"])
 
-    book.add_item(content)
-    book.add_item(epub.EpubNcx())
-    book.add_item(epub.EpubNav())
+    epub_book = create_epub(book, style)
 
-    style = '''
-    body {
-        font-family: Arial, sans-serif;
-        line-height: 1.5;
-        margin: 0;
-        padding: 0;
-    }
-    h1, h2, h3, h4, h5, h6 {
-        color: black;
-    }
-    p {
-        margin: 1em 0;
-    }
-    '''
-    nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-    book.add_item(nav_css)
+    author_directory = message["author"].replace(" ", "") + "/"
 
-    book.toc = (epub.Link('content.xhtml', format_message["subject"], 'content'),)
-    book.spine = ['nav', content]
+    folder_path = ebooks_path + author_directory
+    book_path = f"{folder_path}{book['title']}.epub"
 
-    book_path = ebooks_path + directory
-    
     if not os.path.exists(book_path):
-      os.mkdir(book_path)
-    
-    if os.path.curdir != book_path:
-      os.chdir(book_path)
-    
-    epub.write_epub(f"{title}.epub", book, {})
+      print(f"The ebook {book["title"]} dont exist, saving ebook...")
+      if not os.path.exists(folder_path):
+        os.mkdir(folder_path)
+        print(f"Folder {author_directory} created")
+      if os.path.curdir != folder_path:
+        os.chdir(folder_path)
+      
+      epub.write_epub(f"{book['title']}.epub", epub_book, {})
+      print(f"The ebook {book['title']} was saved succesfully")
+
+      unsended_ebooks.append(book_path)
+    else:
+      print(f"The ebook {book["title"]} already exists")
+
+
+if len(unsended_ebooks) > 0:
+  message_sended = send_message(service, unsended_ebooks[0], yml["sender"], yml["recipient"])
