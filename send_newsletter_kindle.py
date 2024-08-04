@@ -29,7 +29,7 @@ for id in selected_ids:
     message_date = message["date"].split(" ")
     date_text = " ".join([message_date[1], message_date[2], message_date[3]])
 
-    book["title"] = f"{message["subject"]} - {message['author']} - {date_text}"
+    book["title"] = f"{message['subject']} - {message['author']} - {date_text}"
     book["author"] = message["author"]
     book["subject"] = message["subject"]
     book["content"] = format_ebook(message["content"])
