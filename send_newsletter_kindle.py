@@ -42,7 +42,7 @@ for id in selected_ids:
     book_path = f"{folder_path}{book['title']}.epub"
 
     if not os.path.exists(book_path):
-      print(f"The ebook {book["title"]} dont exist, saving ebook...")
+      print(f"The ebook {book['title']} dont exist, saving ebook...")
       if not os.path.exists(folder_path):
         os.mkdir(folder_path)
         print(f"Folder {author_directory} created")
@@ -54,7 +54,7 @@ for id in selected_ids:
 
       unsended_ebooks.append(book_path)
     else:
-      print(f"The ebook {book["title"]} already exists")
+      print(f"The ebook {book['title']} already exists")
 
 
 if len(unsended_ebooks) > 0:
